@@ -1,5 +1,14 @@
+
+from pydantic import BaseModel
+
+class TestCase(BaseModel):
+    id: str
+    prompt: str
+    check: str
+    expected: str
+
 def main():
-    print("Hello from eval-runner!")
+    pass
 
 
 if __name__ == "__main__":
