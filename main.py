@@ -1,17 +1,20 @@
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 import json
 import os
 from dotenv import load_dotenv
 import anthropic
 
 class TestCase(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
     id: str
     prompt: str
     check: str
     expected: str
+
+class EvalResult(BaseModel):
+    id: str
+    passed: bool
+    response: str
 
 def load_test_cases(path: str) -> list[TestCase]:
     with open(path) as f:
@@ -40,10 +43,10 @@ def main():
     for tc in test_cases:
         response = call_model(client, tc.prompt)
         passed = apply_check(response, tc.check, tc.expected)
-        results.append(passed)
+        results.append(EvalResult(id=tc.id, passed=passed, response=response))
         print(f"{tc.id}: {'PASS' if passed else 'FAIL'}")
     total = len(results)
-    passed_count = sum(results)
+    passed_count = sum(r.passed for r in results)
     print(f"\nSCORE: {passed_count}/{total} passed")
 
 
