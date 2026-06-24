@@ -34,6 +34,15 @@ def apply_check(response: str, check: str, expected: str) -> bool:
         return expected.lower() in response.lower()
     return False
 
+def print_report(results: list[EvalResult]) -> None:
+    for r in results:
+        print(f"{r.id}: {'PASS' if r.passed else 'FAIL'}")
+        print(f"  Response: {r.response[:80]}")
+    
+    total = len(results)
+    passed_count = sum(r.passed for r in results)
+    print(f"\nSCORE: {passed_count}/{total} passed")
+
 def main():
     load_dotenv()
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
@@ -44,10 +53,7 @@ def main():
         response = call_model(client, tc.prompt)
         passed = apply_check(response, tc.check, tc.expected)
         results.append(EvalResult(id=tc.id, passed=passed, response=response))
-        print(f"{tc.id}: {'PASS' if passed else 'FAIL'}")
-    total = len(results)
-    passed_count = sum(r.passed for r in results)
-    print(f"\nSCORE: {passed_count}/{total} passed")
+    print_report(results)
 
 
 if __name__ == "__main__":
