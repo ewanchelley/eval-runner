@@ -26,12 +26,25 @@ def call_model(client: anthropic.Anthropic, prompt: str) -> str:
     )
     return message.content[0].text
 
+def apply_check(response: str, check: str, expected: str) -> bool:
+    if check == "contains":
+        return expected.lower() in response.lower()
+    return False
+
 def main():
     load_dotenv()
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    client = anthropic.Anthropic(api_key=api_key)
-    response = call_model(client, "What is the capital of France?")
-    print(response)
+    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    test_cases = load_test_cases("test_cases.json")
+    
+    results = []
+    for tc in test_cases:
+        response = call_model(client, tc.prompt)
+        passed = apply_check(response, tc.check, tc.expected)
+        results.append(passed)
+        print(f"{tc.id}: {'PASS' if passed else 'FAIL'}")
+    total = len(results)
+    passed_count = sum(results)
+    print(f"\nSCORE: {passed_count}/{total} passed")
 
 
 if __name__ == "__main__":
