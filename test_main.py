@@ -1,4 +1,6 @@
-from main import apply_check
+from unittest.mock import MagicMock
+
+from main import apply_check, call_model
 
 
 def test_contains_check_passes_when_expected_present():
@@ -15,3 +17,13 @@ def test_contains_check_fails_when_expected_absent():
 
 def test_unknown_check_type_fails():
     assert apply_check("anything", "nonsense", "anything") is False
+
+def test_call_model():
+    prompt = "What is the capital of France?"
+
+    mock_response = MagicMock()
+    mock_response.content[0].text = "Paris"
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    assert call_model(mock_client, prompt) == "Paris"
