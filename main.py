@@ -1,10 +1,11 @@
 import json
 import os
+import sys
 
 import anthropic
 from anthropic.types import TextBlock
 from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 
 class TestCase(BaseModel):
@@ -53,11 +54,30 @@ def print_report(results: list[EvalResult]) -> None:
     passed_count = sum(r.passed for r in results)
     print(f"\nSCORE: {passed_count}/{total} passed")
 
+def load_test_cases_or_exit(path: str) -> list[TestCase]:
+    try:
+        return load_test_cases(path)
+    except FileNotFoundError:
+        print(f"Error: {path} not found.", file=sys.stderr)
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        print(f"Error: {path} is not valid JSON: {e}", file=sys.stderr)
+        sys.exit(1)
+    except ValidationError as e:
+        print(f"Error: a test case is malformed:\n{e}", file=sys.stderr)
+        sys.exit(1)
 
 def main() -> None:
-    load_dotenv()
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-    test_cases = load_test_cases("test_cases.json")
+    load_dotenv(override=True)
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if api_key is None:
+        print("Error: ANTHROPIC_API_KEY is not set. Add it to a .env file.", 
+              file=sys.stderr)
+        sys.exit(1)
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    test_cases = load_test_cases_or_exit("test_cases.json")
 
     results = []
     for tc in test_cases:

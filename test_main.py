@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+from anthropic.types import TextBlock
 
 from main import apply_check, call_model
 
@@ -22,9 +23,12 @@ def test_unknown_check_type_fails() -> None:
 def test_call_model() -> None:
     prompt = "What is the capital of France?"
 
-    mock_response = MagicMock()
-    mock_response.content[0].text = "Paris"
+    text_block = TextBlock(type="text", text="Paris", citations=None)
+
+    mock_message = MagicMock()
+    mock_message.content = [text_block]
+
     mock_client = MagicMock()
-    mock_client.messages.create.return_value = mock_response
+    mock_client.messages.create.return_value = mock_message
 
     assert call_model(mock_client, prompt) == "Paris"
