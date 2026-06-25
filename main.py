@@ -2,6 +2,7 @@ import json
 import os
 
 import anthropic
+from anthropic.types import TextBlock
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
@@ -31,7 +32,10 @@ def call_model(client: anthropic.Anthropic, prompt: str) -> str:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    return message.content[0].text
+    block = message.content[0]
+    if not isinstance(block, TextBlock):
+        raise ValueError(f"Expected a text response, got {type(block).__name__}")
+    return block.text
 
 
 def apply_check(response: str, check: str, expected: str) -> bool:
@@ -50,7 +54,7 @@ def print_report(results: list[EvalResult]) -> None:
     print(f"\nSCORE: {passed_count}/{total} passed")
 
 
-def main():
+def main() -> None:
     load_dotenv()
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     test_cases = load_test_cases("test_cases.json")
