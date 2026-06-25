@@ -18,6 +18,7 @@ def test_contains_check_fails_when_expected_absent():
 def test_unknown_check_type_fails():
     assert apply_check("anything", "nonsense", "anything") is False
 
+
 def test_call_model():
     prompt = "What is the capital of France?"
 
