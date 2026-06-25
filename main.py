@@ -1,9 +1,11 @@
 
-from pydantic import BaseModel
 import json
 import os
-from dotenv import load_dotenv
+
 import anthropic
+from dotenv import load_dotenv
+from pydantic import BaseModel
+
 
 class TestCase(BaseModel):
     id: str
