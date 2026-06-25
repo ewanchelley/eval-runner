@@ -10,5 +10,23 @@
       "prompt": "Classify the sentiment as POSITIVE or NEGATIVE: 'The product was terrible.'",
       "check": "contains",
       "expected": "NEGATIVE"
-    }
+    },
+    {
+      "id": "capital-france-exact",
+      "prompt": "What is the capital of France? Answer with a single word and nothing else.",
+      "check": "exact_match",
+      "expected": "Paris"
+    },
+    {
+      "id": "arithmetic-exact",
+      "prompt": "What is 2 + 2? Reply with only the number, no other text.",
+      "check": "exact_match",
+      "expected": "4"
+    },
+    {
+        "id": "fibonacci-exact",
+        "prompt": "What is the 10th Fibonacci number if the first three are 1,1,2? Reply with only the number, no other text.",
+        "check": "exact_match",
+        "expected": "55"
+      }
   ]

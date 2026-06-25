@@ -42,6 +42,8 @@ def call_model(client: anthropic.Anthropic, prompt: str) -> str:
 def apply_check(response: str, check: str, expected: str) -> bool:
     if check == "contains":
         return expected.lower() in response.lower()
+    if check == "exact_match":
+        return response.strip().lower() == expected.lower()
     return False
 
 

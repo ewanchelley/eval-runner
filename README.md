@@ -46,9 +46,15 @@ Test cases live in `test_cases.json` as a list of objects:
 
 ### Supported checks
 
-| Check      | Passes when…                                         |
-| ---------- | ---------------------------------------------------- |
-| `contains` | The response contains `expected` (case-insensitive)  |
+| Check         | Passes when…                                                          |
+| ------------- | --------------------------------------------------------------------- |
+| `contains`    | The response contains `expected` (case-insensitive)                   |
+| `exact_match` | The response equals `expected` (case-insensitive, whitespace-trimmed) |
+
+`exact_match` is stricter than `contains`: it trims surrounding whitespace and
+ignores case, but does not strip punctuation or extra words. This makes it a test
+of instruction-following — e.g. whether a model asked to "answer with a single
+word" actually does, rather than padding the answer with a full sentence.
 
 Unknown check types fail safely rather than passing silently.
 
@@ -99,7 +105,7 @@ without network access.
 
 ## Possible extensions
 
-- More check types (regex match, exact match, JSON-schema validation,
+- More check types (regex match, JSON-schema validation,
   model-graded / LLM-as-judge scoring)
 - Configurable model and parameters per test case
 - Structured output (JSON/CSV) alongside the printed report
