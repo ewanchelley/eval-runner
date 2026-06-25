@@ -19,7 +19,10 @@ test_cases.json  →  load & validate  →  call model  →  apply check  →  r
   data on load and structure the results.
 - **`load_test_cases`** - reads and validates the JSON test cases.
 - **`call_model`** - sends a prompt to Claude and returns the text response.
-- **`apply_check`** - applies a check to the response and returns pass/fail.
+- **`apply_deterministic_check`** - applies a string-based check (`contains`,
+  `exact_match`) to the response and returns pass/fail. Pure and network-free.
+- **`grade_with_model`** - applies a `model_graded` check by asking a second model
+  call (the "judge") to score the response against a rubric.
 - **`print_report`** - prints per-case results and the overall score.
 
 ## Test cases
@@ -42,19 +45,29 @@ Test cases live in `test_cases.json` as a list of objects:
 | `id`       | Unique identifier for the test case                 |
 | `prompt`   | The prompt sent to the model                        |
 | `check`    | The check to apply to the response                  |
-| `expected` | The value the check compares against                |
+| `expected` | The value the check compares against, or a rubric for `model_graded` |
 
 ### Supported checks
 
-| Check         | Passes when…                                                          |
-| ------------- | --------------------------------------------------------------------- |
-| `contains`    | The response contains `expected` (case-insensitive)                   |
-| `exact_match` | The response equals `expected` (case-insensitive, whitespace-trimmed) |
+| Check          | Passes when…                                                          |
+| -------------- | --------------------------------------------------------------------- |
+| `contains`     | The response contains `expected` (case-insensitive)                   |
+| `exact_match`  | The response equals `expected` (case-insensitive, whitespace-trimmed) |
+| `model_graded` | A second model call ("judge") grades the response as meeting `expected`|
 
 `exact_match` is stricter than `contains`: it trims surrounding whitespace and
 ignores case, but does not strip punctuation or extra words. This makes it a test
-of instruction-following — e.g. whether a model asked to "answer with a single
+of instruction-following - e.g. whether a model asked to "answer with a single
 word" actually does, rather than padding the answer with a full sentence.
+
+`model_graded` handles open-ended cases where no string match is possible (e.g.
+"is this explanation correct *and* simple?", "did the model refuse this request?").
+A second "judge" call is given the original prompt, the response, and the
+`expected` field as a **rubric**, and asked to reply `PASS` or `FAIL`. Here
+`expected` describes the grading criteria rather than a literal target string. The
+judge is reliable because grading against a rubric is an easier task than solving
+from scratch — though it is not infallible (model judges can exhibit self-preference,
+verbosity, and position biases).
 
 Unknown check types fail safely rather than passing silently.
 
@@ -105,8 +118,7 @@ without network access.
 
 ## Possible extensions
 
-- More check types (regex match, JSON-schema validation,
-  model-graded / LLM-as-judge scoring)
+- More check types (regex match, JSON-schema validation)
 - Configurable model and parameters per test case
 - Structured output (JSON/CSV) alongside the printed report
 - Concurrency for running cases in parallel

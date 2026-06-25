@@ -39,7 +39,7 @@ def call_model(client: anthropic.Anthropic, prompt: str) -> str:
     return block.text
 
 
-def apply_check(response: str, check: str, expected: str) -> bool:
+def apply_deterministic_check(response: str, check: str, expected: str) -> bool:
     if check == "contains":
         return expected.lower() in response.lower()
     if check == "exact_match":
@@ -47,14 +47,43 @@ def apply_check(response: str, check: str, expected: str) -> bool:
     return False
 
 
+def grade_with_model(
+    client: anthropic.Anthropic, prompt: str, response: str, expected: str
+) -> bool:
+    grading_prompt = f"""
+        You are an LLM eval, and must grade the response of another LLM.
+        The LLM was given this prompt:
+
+        PROMPT: "{prompt}".
+
+        It was expected to produce a response that aligns with this expectation:
+
+        EXPECTED: "{expected}".
+
+        The actual response the LLM gave was:
+
+        RESPONSE: "{response}".
+
+        Determine whether the LLM gave a satisfactory response, 
+        according to the expectation. 
+        If so, your response should simply be PASS, otherwise it should be FAIL.
+
+    """
+    verdict = call_model(client, grading_prompt)
+    outcome = verdict.strip().upper().startswith("PASS")
+    return outcome
+
+
 def print_report(results: list[EvalResult]) -> None:
     for r in results:
-        print(f"{r.id}: {'PASS' if r.passed else 'FAIL'}")
-        print(f"  Response: {r.response[:80]}")
+        preview = " ".join(r.response.split())[:200]
+        print(f"\n{r.id}: {'PASS' if r.passed else 'FAIL'}")
+        print(f"  Response: {preview}")
 
     total = len(results)
     passed_count = sum(r.passed for r in results)
     print(f"\nSCORE: {passed_count}/{total} passed")
+
 
 def load_test_cases_or_exit(path: str) -> list[TestCase]:
     try:
@@ -69,12 +98,15 @@ def load_test_cases_or_exit(path: str) -> list[TestCase]:
         print(f"Error: a test case is malformed:\n{e}", file=sys.stderr)
         sys.exit(1)
 
+
 def main() -> None:
     load_dotenv(override=True)
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if api_key is None:
-        print("Error: ANTHROPIC_API_KEY is not set. Add it to a .env file.", 
-              file=sys.stderr)
+        print(
+            "Error: ANTHROPIC_API_KEY is not set. Add it to a .env file.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     client = anthropic.Anthropic(api_key=api_key)
@@ -84,7 +116,10 @@ def main() -> None:
     results = []
     for tc in test_cases:
         response = call_model(client, tc.prompt)
-        passed = apply_check(response, tc.check, tc.expected)
+        if tc.check == "model_graded":
+            passed = grade_with_model(client, tc.prompt, response, tc.expected)
+        else:
+            passed = apply_deterministic_check(response, tc.check, tc.expected)
         results.append(EvalResult(id=tc.id, passed=passed, response=response))
     print_report(results)
 
